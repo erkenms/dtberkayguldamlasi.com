@@ -30,6 +30,7 @@
          iframe fills the rest of the viewport. */
       --logo-width: 214px;
       --logo-height: 72px;
+      --logo-padding-inline: 23px;
       --header-padding-block: 22px;
       --header-padding-inline: 36px;
       --header-height: calc(var(--logo-height) + 2 * var(--header-padding-block) + 1px);
@@ -85,7 +86,8 @@
       display: block;
       width: var(--logo-width);
       height: var(--logo-height);
-      object-fit: cover;
+      padding-inline: var(--logo-padding-inline);
+      object-fit: contain;
     }
 
     h1,
@@ -133,6 +135,7 @@
       :root {
         --logo-width: 155px;
         --logo-height: 52px;
+        --logo-padding-inline: 16px;
         --header-padding-block: 14px;
         --header-padding-inline: 20px;
       }

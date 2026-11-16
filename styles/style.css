@@ -296,10 +296,12 @@ h3 {
   flex-shrink: 0;
 }
 
+/* The box sets the header height; the trimmed wordmark is centered inside it. */
 .brand-logo {
   width: 214px;
   height: 72px;
-  object-fit: cover;
+  padding-inline: 23px;
+  object-fit: contain;
 }
 
 .main-nav {
@@ -939,6 +941,7 @@ h3 {
   .brand-logo {
     width: 155px;
     height: 52px;
+    padding-inline: 16px;
   }
 
   .header-cta {
