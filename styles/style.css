@@ -55,6 +55,10 @@ video {
   height: auto;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -140,6 +144,24 @@ h3 {
 /* ==========================================================================
    Shared components
    ========================================================================== */
+/* Sprite icons (see the <svg hidden> sprite at the top of index.html) */
+.icon {
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.service-top .icon {
+  stroke-width: 1.4;
+}
+
+.gallery-lightbox .icon {
+  stroke-width: 1.8;
+}
+
 .section {
   max-width: var(--container-width);
   margin: auto;
