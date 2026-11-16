@@ -1,109 +1,124 @@
-(function () {
+(() => {
   'use strict';
 
-  /* ---------- Mobile Menu Toggle ---------- */
-  const menuToggle = document.querySelector('.menu-toggle');
-  const mainNav = document.querySelector('.main-nav');
+  /* ---------- Mobile menu ---------- */
+  function initMobileMenu() {
+    const toggle = document.querySelector('.menu-toggle');
+    const nav = document.querySelector('.main-nav');
+    if (!toggle || !nav) return;
 
-  if (menuToggle && mainNav) {
-    const syncMenuState = (isOpen) => {
-      mainNav.classList.toggle('is-open', isOpen);
-      menuToggle.classList.toggle('is-open', isOpen);
-      menuToggle.setAttribute('aria-expanded', String(isOpen));
-      menuToggle.setAttribute('aria-label', isOpen ? 'Menüyü kapat' : 'Menüyü aç');
+    const setOpen = (isOpen) => {
+      nav.classList.toggle('is-open', isOpen);
+      toggle.setAttribute('aria-expanded', String(isOpen));
+      toggle.setAttribute('aria-label', isOpen ? 'Menüyü kapat' : 'Menüyü aç');
     };
 
-    menuToggle.addEventListener('click', () => {
-      syncMenuState(!menuToggle.classList.contains('is-open'));
+    toggle.addEventListener('click', () => {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
     });
 
-    mainNav.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        syncMenuState(false);
-      });
+    nav.addEventListener('click', (event) => {
+      if (event.target.closest('a')) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && nav.classList.contains('is-open')) {
+        setOpen(false);
+        toggle.focus();
+      }
     });
   }
 
-  /* ---------- Clinic Gallery ---------- */
-  const gallery = document.querySelector('.gallery-grid');
-  const lightbox = document.querySelector('.gallery-lightbox');
+  /* ---------- Clinic gallery lightbox ---------- */
+  const SWIPE_THRESHOLD_PX = 48;
 
-  if (gallery && lightbox instanceof HTMLDialogElement) {
-    const images = Array.from(gallery.querySelectorAll('img'));
+  function initGallery() {
+    const figures = document.querySelectorAll('.gallery-grid figure');
+    const lightbox = document.querySelector('.gallery-lightbox');
+    if (!figures.length || !lightbox) return;
+
     const lightboxImage = lightbox.querySelector('.lightbox-image');
     const lightboxCaption = lightbox.querySelector('.lightbox-caption');
     const lightboxFigure = lightbox.querySelector('.lightbox-figure');
-    const closeButton = lightbox.querySelector('.lightbox-close');
-    const previousButton = lightbox.querySelector('.lightbox-previous');
-    const nextButton = lightbox.querySelector('.lightbox-next');
-    let activeIndex = 0;
-    let swipeStart = null;
 
-    const showImage = (index) => {
-      activeIndex = (index + images.length) % images.length;
-      const image = images[activeIndex];
-      if (lightboxImage instanceof HTMLImageElement && lightboxCaption) {
-        lightboxImage.src = image.currentSrc || image.src;
-        lightboxImage.alt = image.alt;
-        lightboxCaption.textContent = image.closest('figure')?.querySelector('figcaption')?.textContent || '';
-      }
+    const photos = Array.from(figures, (figure) => {
+      const image = figure.querySelector('img');
+      return { image, caption: figure.querySelector('figcaption')?.textContent ?? '' };
+    });
+
+    let activeIndex = 0;
+
+    const show = (index) => {
+      activeIndex = (index + photos.length) % photos.length;
+      const { image, caption } = photos[activeIndex];
+      lightboxImage.src = image.currentSrc || image.src;
+      lightboxImage.alt = image.alt;
+      lightboxCaption.textContent = caption;
     };
 
-    images.forEach((image, index) => {
-      const figure = image.closest('figure');
-      if (!figure) return;
+    const showPrevious = () => show(activeIndex - 1);
+    const showNext = () => show(activeIndex + 1);
 
+    const open = (index) => {
+      show(index);
+      lightbox.showModal();
+      lightbox.focus();
+    };
+
+    // Make each thumbnail behave like a button.
+    figures.forEach((figure, index) => {
       figure.tabIndex = 0;
       figure.setAttribute('role', 'button');
-      figure.setAttribute('aria-label', `Fotoğrafı büyüt: ${figure.querySelector('figcaption')?.textContent || image.alt}`);
+      figure.setAttribute('aria-label', `Fotoğrafı büyüt: ${photos[index].caption || photos[index].image.alt}`);
 
-      const openLightbox = () => {
-        showImage(index);
-        lightbox.showModal();
-        lightbox.focus();
-      };
-
-      figure.addEventListener('click', openLightbox);
+      figure.addEventListener('click', () => open(index));
       figure.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          openLightbox();
+          open(index);
         }
       });
     });
 
-    closeButton?.addEventListener('click', () => lightbox.close());
-    previousButton?.addEventListener('click', () => showImage(activeIndex - 1));
-    nextButton?.addEventListener('click', () => showImage(activeIndex + 1));
+    lightbox.querySelector('.lightbox-close').addEventListener('click', () => lightbox.close());
+    lightbox.querySelector('.lightbox-previous').addEventListener('click', showPrevious);
+    lightbox.querySelector('.lightbox-next').addEventListener('click', showNext);
 
-    lightboxFigure?.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse') return;
-      swipeStart = { x: event.clientX, y: event.clientY };
+    // Clicking the backdrop (the dialog itself, outside its children) closes it.
+    lightbox.addEventListener('click', (event) => {
+      if (event.target === lightbox) lightbox.close();
     });
 
-    lightboxFigure?.addEventListener('pointerup', (event) => {
+    // Escape is handled natively by <dialog>.
+    lightbox.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') showPrevious();
+      if (event.key === 'ArrowRight') showNext();
+    });
+
+    // Horizontal swipe on touch/pen devices.
+    let swipeStart = null;
+
+    lightboxFigure.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'mouse') swipeStart = { x: event.clientX, y: event.clientY };
+    });
+
+    lightboxFigure.addEventListener('pointerup', (event) => {
       if (!swipeStart) return;
       const deltaX = event.clientX - swipeStart.x;
       const deltaY = event.clientY - swipeStart.y;
       swipeStart = null;
 
-      if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        showImage(activeIndex + (deltaX < 0 ? 1 : -1));
+      if (Math.abs(deltaX) >= SWIPE_THRESHOLD_PX && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX < 0) showNext();
+        else showPrevious();
       }
     });
 
-    lightboxFigure?.addEventListener('pointercancel', () => {
+    lightboxFigure.addEventListener('pointercancel', () => {
       swipeStart = null;
     });
-
-    lightbox.addEventListener('click', (event) => {
-      if (event.target === lightbox) lightbox.close();
-    });
-
-    lightbox.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') lightbox.close();
-      if (event.key === 'ArrowLeft') showImage(activeIndex - 1);
-      if (event.key === 'ArrowRight') showImage(activeIndex + 1);
-    });
   }
+
+  initMobileMenu();
+  initGallery();
 })();
